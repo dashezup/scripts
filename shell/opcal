@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# One Page Calendar 2021
+# Inspired by: https://davebakker.io/onepagecalendar/
+
+calendar="\
+                 2021
+
+               | Feb Jun Sep Apr Jan May Aug
+               | Mar     Dec Jul Oct        
+               | Nov                        
+---------------+----------------------------
+ 1  8 15 22 29 | Mon Tue Wed Thu Fri Sat Sun
+ 2  9 16 23 30 | Tue Wed Thu Fri Sat Sun Mon
+ 3 10 17 24 31 | Wed Thu Fri Sat Sun Mon Tue
+ 4 11 18 25    | Thu Fri Sat Sun Mon Tue Wed
+ 5 12 19 26    | Fri Sat Sun Mon Tue Wed Thu
+ 6 13 20 27    | Sat Sun Mon Tue Wed Thu Fri
+ 7 14 21 28    | Sun Mon Tue Wed Thu Fri Sat"
+
+highlight="[30;47m"
+c_reset="[0m"
+c_weekday="[30;44m"
+c_weekend="[33m"
+
+show_calendar() {
+	read year month day weekday
+	echo "$calendar" | sed -e "
+		s/${year}/${highlight}${year}${c_reset}/
+		s/ ${month} / ${highlight}${month}${c_reset} /
+		/ ${day}/ { s/ ${day} / ${highlight}${day}${c_reset} /; s/ ${weekday} / ${c_weekday}${weekday}${c_reset} / }
+		s/ Sat/ ${c_weekend}Sat${c_reset}/g
+		s/ Sun/ ${c_weekend}Sun${c_reset}/g
+	"
+}
+
+date "+%G %b %d %a" | show_calendar

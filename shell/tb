@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 if [ ! -z ${WAYLAND_DISPLAY+x} ]; then copy_cmd="wl-copy"; elif [ ! -z ${DISPLAY+x} ]; then copy_cmd="xclip -selection clipboard"; else copy_cmd=":"; fi
 [ "$1" = "-i" ] && { DATA=$(bash -i |& tee /dev/tty); echo "$DATA" | ansifilter | tb; exit 0; }
 [ "$1" = "-ic" ] && { DATA=$(bash -i |& tee /dev/tty); echo "$DATA" | tb; exit 0; }
