@@ -6,9 +6,9 @@
 calendar="\
                  2021
 
-               | Feb Jun Sep Apr Jan May Aug
-               | Mar     Dec Jul Oct        
-               | Nov                        
+               | Feb                        
+               | Mar     Sep Apr Jan        
+               | Nov Jun Dec Jul Oct May Aug
 ---------------+----------------------------
  1  8 15 22 29 | Mon Tue Wed Thu Fri Sat Sun
  2  9 16 23 30 | Tue Wed Thu Fri Sat Sun Mon
