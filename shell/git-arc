@@ -1,0 +1,48 @@
+#!/usr/bin/env sh
+
+slugify() {
+	# https://github.com/Mayeu/slugify/blob/master/slugify#L24
+	export LANG=POSIX
+	export LC_ALL=POSIX
+	sed -e 's/[^[:alnum:]]/-/g' \
+		| tr -s '-' \
+		| sed -e 's/-$//'
+}
+
+modify_zipnote() {
+	filename="$1"
+	note="$(zipnote $filename)"
+	author="$(git log -1 --pretty='%an')"
+	info="$(git --no-pager show --pretty='format:%C(auto)%h (%s, %ai)' --stat)"
+	echo "${note}\nAuthor: ${author}\n${info}" | zipnote -w "$filename"
+}
+
+usage() {
+	: "${progname:="${0##*/}"}"
+	cat <<_EOF | GREP_COLORS='ms=1' egrep --color "$progname|$"
+Usage: $progname [tar|tar.gz|zip]       create archive
+_EOF
+	exit 0
+}
+
+case $1 in
+	"") FORMAT=tar.gz;;
+	tar|tar.gz|zip) FORMAT=$1;;
+	*) usage;;
+esac
+
+reponame="$(basename $(git rev-parse --show-toplevel))"
+filename="$(git --no-pager log -1 --oneline --pretty='%as %s' | slugify).${FORMAT}"
+
+if [ -f "$filename" ]; then
+	echo "Found exsiting archive: $(tput bold)${filename}$(tput sgr0)"
+	exit 1
+else
+	git archive --format="$FORMAT" -o "$filename" --prefix="${reponame}/" HEAD
+	echo "$filename"
+	if [ "$FORMAT" = "zip" ]; then
+		modify_zipnote "$filename"
+		unzip -l "$filename"
+	fi
+fi
+exit 0
