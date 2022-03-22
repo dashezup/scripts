@@ -1,0 +1,42 @@
+#!/bin/sh
+
+which xbps-query xmllint >/dev/null || exit 1
+: "${progname:="${0##*/}"}"
+
+get_pkgsize() {
+	xmllint --xpath "/plist/dict/key[text()='$1']/following-sibling::dict[1]/key[text()='installed_size']/following-sibling::integer[1]/text()" /var/db/xbps/pkgdb-0.38.plist 2>/dev/null
+}
+
+get_depsize() {
+	#for pkg in $(xbps-query -Rx $1 | sed 's/\(>\|<\|=\).*$//'); do
+	for pkg in $(xbps-query --fulldeptree -Rx $1 | xargs -L1 xbps-uhelper getpkgname); do
+		get_pkgsize $pkg
+	done | paste -d+ -s | bc | numfmt --to=iec-i
+}
+
+usage() {
+	cat <<_EOF
+Usage: $progname [pkg]		show package info
+_EOF
+	exit 1
+}
+
+show_pkginfo() {
+	local pkgver=$(xbps-query -p pkgver -R $1)
+	local pkgsize=$(xbps-query -p installed_size -R $1)
+	local depsize=$(get_depsize $1)
+	local numfile=$(xbps-query -Rf $1 | wc -l)
+	local numdep=$(xbps-query --fulldeptree -Rx $1 | wc -l)
+	cat <<_EOF
+pkg: $pkgver
+size: $pkgsize
+depsize: $depsize
+numfile: $numfile
+numdep: $numdep
+_EOF
+}
+
+[ -z "$1" ] && usage
+xbps-query -R $1 >/dev/null || { echo "invalid package"; exit 1; }
+
+show_pkginfo $1 | sed "s/^/$(tput bold)/; s/:/$(tput sgr0):/" | column -t

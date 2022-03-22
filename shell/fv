@@ -1,0 +1,71 @@
+#!/bin/env sh
+#
+# fuzzy finder based File Viewer
+#
+: "${progname:="${0##*/}"}"
+: "${WRKDIR:=./}"
+
+which sk bat fd >/dev/null || exit 1
+
+fuzzy_git() {
+	local HEADER="[ENTER] Print [TAB] Toggle [ALT-F] View [ALT-H] Log [ALT-L] Log 1L"
+	local REPO=$(git -C "$WRKDIR" rev-parse --show-toplevel 2>/dev/null) #|| { echo "${WRKDIR} is not a git repo"; exit 1; }
+	git -C "$REPO" ls-tree --full-tree -r --name-only HEAD \
+		| GREP_COLORS="sl=0;34;49:ms=0;37;49" grep --color=always '^\|[^/]*$' \
+		| sk --ansi \
+			--header="${HEADER} | $REPO" \
+			--prompt "[git] > " \
+			--layout=reverse-list \
+			--preview="git -C \"${WRKDIR}\" show master:{1} | bat --color=always -p" \
+			--preview-window=up:40% \
+			-m \
+			--bind "alt-f:execute[ git -C \"${REPO}\" show master:{} | bat -p --color=always --paging=always ]" \
+			--bind "alt-l:execute[ git -C \"${REPO}\" log --oneline -- {} ]" \
+			--bind "alt-h:execute[ git -C \"${REPO}\" log -p -- {} ]" \
+			${1:+--query "$@"}
+}
+
+fuzzy_find() {
+	[ -d "$WRKDIR" ] || exit 0
+	fd --type file --color=always . "$WRKDIR" \
+		| sk \
+			--ansi \
+			--layout=reverse-list \
+			--preview="bat --color=always --paging=always {}" \
+			--preview-window=up \
+			--prompt "$WRKDIR > " \
+			--bind "alt-f:execute[ bat --color=always --paging=always {} ]" \
+			${1:+--query "$@"}
+}
+
+usage() {
+	cat <<_EOF
+Usage: $progname [options]
+
+Options:
+ -d <repo-dir>		Set git repository to this directory
+ -f			Force to use find instead of git
+ -h			Show this page
+_EOF
+	exit 0
+}
+
+while getopts "d:fh" opt; do
+	case $opt in
+		d) WRKDIR="$OPTARG";;
+		f) readonly FORCE_DIR=1;;
+		h) usage;;
+	*) usage;;
+	esac
+done
+shift $((OPTIND - 1))
+
+
+[ -d "$WRKDIR" ] || { echo "$WRKDIR: no such directory"; return 0; }
+if [ "$FORCE_DIR" = 1 ]; then
+	fuzzy_find
+elif git -C "$WRKDIR" rev-parse 2>/dev/null; then
+	fuzzy_git "$@"
+else
+	fuzzy_find
+fi

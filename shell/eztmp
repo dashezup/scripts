@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# https://stackoverflow.com/a/38021063
+urlencodepipe() {
+  local LANG=C; local c; while IFS= read -r c; do
+    case $c in [a-zA-Z0-9.~_-]) printf "$c"; continue ;; esac
+    printf "$c" | od -An -tx1 | tr ' ' % | tr -d '\n'
+  done <<EOF
+$(fold -w1)
+EOF
+  echo
+}
+urlencode() { printf "$*" | urlencodepipe ;}
+
+RAND=$(cat /dev/urandom | tr -dc 'a-z0-9' | head --bytes 8)
+#URL="https://$USER:$PASSWORD@$DOMAIN:$PORT/path"
+
+# upload image from clipboard
+[ "$1" = "-c" ] \
+	&& { xclip -selection clipboard -t image/png -o \
+	| curl -o /dev/null --progress-bar -T - "$URL/$RAND.png" \
+	&& TMPURL="https://ezup.dev/tmp/$RAND.png" \
+	&& notify-send.sh --icon=terminal "Clipboard Image Uploaded\n$TMPURL"; \
+	echo "$TMPURL" | xclip -selection clipboard; \
+	exit 0; }
+
+# upload from file or stdin
+[ ! -z "$1" ] && [ -f "$1" ] \
+	&& FILE="$1" NAME=${RAND}_$(basename "$1") \
+	|| { [ ! -t 0 ] && FILE="-" NAME="${RAND}.txt"; }
+#&& FILE="$1" NAME=$(urlencode ${RAND}_$(basename "$1")) \
+[ ! -z "$FILE" ] \
+	&& { curl -o /dev/null --progress-bar -T "$FILE" "$URL/$NAME" \
+	&& TMPURL="https://ezup.dev/tmp/$(urlencode $NAME)"; echo $TMPURL; \
+	echo "$TMPURL" | xclip -selection clipboard; } \
+	|| exit 1

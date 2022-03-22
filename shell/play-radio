@@ -1,0 +1,62 @@
+#!/bin/sh
+
+: "${progname:="${0##*/}"}"
+
+play_alt987() {
+	# https://alt987fm.iheart.com/
+	local STREAM_HLS='https://stream.revma.ihrhls.com/zc201/hls.m3u8'
+	#local STREAM_SHOUTCAST='https://stream.revma.ihrhls.com/zc201'
+	local COVER_ART='http://i.iheart.com/v3/re/assets/images/08e927dc-5949-41d6-972b-b5581a0850f3.png'
+	mpv \
+		--volume=60 \
+		--vid=1 \
+		--external-file="$COVER_ART" \
+		"$STREAM_HLS"
+}
+
+play_ezup() {
+	# ezup.dev
+	mpv \
+		--volume=60 \
+		--window-scale=0.5 \
+		'http://45.32.163.153:10100'
+}
+
+play_synthwave() {
+	mpv \
+		--vid=1 \
+		--volume=60 \
+		--image-display-duration=inf \
+		'https://nightride.fm/stream/nightride.m4a'
+}
+
+usage() {
+	cat <<_EOF
+Usage: $progname alt|ezup|synthwave	play radio
+       $progname -k			stop playing
+
+_EOF
+	exit 1
+}
+
+stop_playing() {
+	local ALL_PID=$(pidof -x $progname)
+	local SELF_PID=$(cut -d' ' -f4 /proc/self/stat)
+	local OTHER_PID=$(echo "$ALL_PID" | sed "s/$SELF_PID//")
+	echo "Killing: $OTHER_PID"
+	pkill -P $OTHER_PID
+	exit 0
+}
+
+[ "$1" = "-k" ] && stop_playing
+
+pidof mpv >/dev/null 2>&1 && { printf "Found running process of mpv!\n\n"; usage; }
+test "$(pidof -x $progname)" != "$(cut -d' ' -f4 /proc/self/stat)" && { printf "Found running process of ${progname}!\n\n"; usage; }
+
+[ -z $1 ] && usage
+case "$1" in
+	alt		)	play_alt987				;;
+	ezup		)	play_ezup				;;
+	synthwave	)	play_synthwave				;;
+	*		)	usage					;;
+esac
