@@ -1,0 +1,30 @@
+#!/bin/sh
+
+run_bemenu() {
+	bemenu -i -H23 -P '-->' \
+		--tf '#26A69A' --tb '#212121' \
+		--hf '#eeeeee' --hb '#005577' \
+		$@
+}
+
+run_flatpak() {
+	APP=$(flatpak list --app --columns=name,description,version,application \
+		| tr '\t' ',' \
+		| column -s, -t \
+		| run_bemenu -l18 -p 'Flatpak' \
+		| awk '{print $NF}')
+	test ! -z "$APP" && flatpak run "$APP"
+}
+
+run_appimage() {
+	APP=$(ls -d ${HOME}/Desktop/AppImage/*.AppImage | run_bemenu -l18 -p 'AppImage')
+	test ! -z "$APP" && exec $APP
+}
+
+RUN=$(echo "Flatpak\nAppImage" | run_bemenu -l2 -p 'RUN')
+
+if [ "$RUN" = "Flatpak" ]; then
+	run_flatpak
+elif [ "$RUN" = "AppImage" ]; then
+	run_appimage
+fi
