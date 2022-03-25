@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# V Tools
+# SPDX-License-Identifier: CC0-1.0
+
+silent_video() {
+	# add silent audio to a video file
+	INPUT="$1"
+	if [ ! -s "$INPUT" ]; then
+		echo "vtools silent-video [file]"
+		exit 0
+	fi
+	echo "- Input File: $INPUT"
+	# RAND=$(cat /dev/urandom | tr -dc 'a-z0-9' | head --bytes 8)
+	DIR="$(dirname $(realpath $INPUT))"
+	OUTPUT="${DIR}/$(date +%s)_$(basename $INPUT)"
+	ffmpeg \
+		-hide_banner -loglevel error \
+		-f lavfi \
+		-i anullsrc=channel_layout=stereo:sample_rate=44100 \
+		-i "$INPUT" \
+		-c:v copy -c:a aac -shortest \
+		"$OUTPUT"
+	echo "- Output File: $OUTPUT"
+}
+
+usage() {
+	echo "Usage:    vtools [silent-video]"
+}
+
+case $1 in
+	"silent-video")	silent_video "$2";;
+	*) usage;;
+esac
+exit 0

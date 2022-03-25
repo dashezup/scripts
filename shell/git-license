@@ -20,7 +20,16 @@ SPDX="0BSD 389-exception AAL ADSL AFL-1.1 AFL-1.2 AFL-2.0 AFL-2.1 AFL-3.0 AGPL-1
 #URL=${SPDX[$1]}
 
 usage() {
-	echo "Usage:    git license [-h|-f|-l|SPDX-License-Identifier]"
+	cat <<_EOF | GREP_COLORS='ms=1' egrep --color "git license|$"
+Usage:    git license [-h|-s|-f|-l|SPDX-License-Identifier]
+
+	  git license -h			show help
+	  git license -s			search with fzf/skim
+	  git license -f			search with fzf/skim and download license
+	  git license -l			list all SPDX licenses
+	  git license SPDX-License-Identifier	download the license
+_EOF
+	exit 0
 }
 
 list_spdx() {
@@ -36,8 +45,11 @@ fuzzy_spdx() {
 		echo "Missing fzf/skim"
 		exit 1
 	fi
-	QUERY=$(echo "$SPDX" | tr ' ' '\n' | $FF --layout=reverse --height=30)
-	test -z "$QUERY" && exit 0 || get_spdx "$QUERY"
+	echo "$SPDX" | tr ' ' '\n' | $FF --layout=reverse --height=30 || exit 0
+	# QUERY=$(echo "$SPDX" | tr ' ' '\n' | $FF --layout=reverse --height=30)
+	# test -z "$QUERY" && exit 0 || get_spdx "$QUERY"
+	# test -z "$QUERY" && exit 0 || echo "$QUERY"
+	# || get_spdx "$QUERY"
 }
 
 get_spdx() {
@@ -59,7 +71,8 @@ get_spdx() {
 case "$1" in
 	'' | -h)	usage;;
 	'-l')		list_spdx;;
-	'-f')		fuzzy_spdx;;
+	'-s')		echo "SPDX-License-Identifier: $(fuzzy_spdx)";;
+	'-f')		get_spdx "$(fuzzy_spdx)";;
 	*)		get_spdx "$1";;
 esac
 exit 0
