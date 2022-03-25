@@ -28,7 +28,15 @@ list_spdx() {
 }
 
 fuzzy_spdx() {
-	QUERY=$(echo "$SPDX" | tr ' ' '\n' | sk --layout=reverse --height=30)
+	if command -v fzf >/dev/null; then
+		FF=fzf
+	elif command -v sk >/dev/null; then
+		FF=sk
+	else
+		echo "Missing fzf/skim"
+		exit 1
+	fi
+	QUERY=$(echo "$SPDX" | tr ' ' '\n' | $FF --layout=reverse --height=30)
 	test -z "$QUERY" && exit 0 || get_spdx "$QUERY"
 }
 
