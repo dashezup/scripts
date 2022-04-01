@@ -3,8 +3,18 @@
 # V Tools
 # SPDX-License-Identifier: CC0-1.0
 
+record_wayland_window() {
+	FILE="screenrecord-$(date +%s).mp4"
+	GEOMETRY=$(swaymsg -t get_tree | jq -r '.. | select(.pid? and .visible?) | .rect | "\(.x),\(.y) \(.width)x\(.height)"' | slurp)
+	wf-recorder -g "$GEOMETRY" -f "$FILE"
+}
+
+record_wayland_selection() {
+	FILE="screenrecord-$(date +%s).mp4"
+	wf-recorder -g "$(slurp)" -f "$FILE"
+}
+
 silent_video() {
-	# add silent audio to a video file
 	INPUT="$1"
 	if [ ! -s "$INPUT" ]; then
 		echo "vtools silent-video [file]"
@@ -25,11 +35,18 @@ silent_video() {
 }
 
 usage() {
-	echo "Usage:    vtools [silent-video]"
+	cat <<_EOF | GREP_COLORS='ms=1' egrep --color "vtools|$"
+Usage: vtools silent-video [file.mp4]      add silent audio to video
+       vtools record-wayland-window        record a window under wayland
+       vtools record-wayland-selection     record the selected area under wayland
+_EOF
+	exit 1
 }
 
 case $1 in
-	"silent-video")	silent_video "$2";;
+	"silent-video")			silent_video "$2";;
+	"record-wayland-selection")	record_wayland_selection;;
+	"record-wayland-window")	record_wayland_window;;
 	*) usage;;
 esac
 exit 0
