@@ -34,11 +34,53 @@ silent_video() {
 	echo "- Output File: $OUTPUT"
 }
 
+count() {
+	echo "Input text for counting:"
+	read -r text
+	printf "$text" | wc
+}
+
+qrcode() {
+	if [ -z "$1" ]; then
+		echo "Input text for QR Code encoding:"
+		read -r text
+		printf "$text" | qrencode --type=ANSI256
+	else
+		zbarimg "$1"
+	fi
+}
+
+network_connection_test() {
+	time_seconds=$(curl \
+		-o/dev/null \
+		-sw '%{time_appconnect}' \
+		'https://connectivitycheck.gstatic.com/generate_204'
+	)
+	# zsh
+	# printf "%.0fms\n" $((time_seconds * 1000))
+	time_ms=$(echo "${time_seconds} * 1000" | bc)
+	printf "%.0fms\n" "$time_ms"
+}
+
+calculator() {
+	echo "Input for calculation:\n"
+	while true; do
+		# bc <<<"scale=3; $(read -e)"
+		read -r operation
+		echo "scale=3; ${operation}" | bc
+		echo
+	done
+}
+
 usage() {
 	cat <<_EOF | GREP_COLORS='ms=1' egrep --color "vtools|$"
-Usage: vtools silent-video [file.mp4]      add silent audio to video
-       vtools record-wayland-window        record a window under wayland
-       vtools record-wayland-selection     record the selected area under wayland
+Usage: vtools silent-video [file.mp4]      ffmpeg      | add silent audio to video
+       vtools record-wayland-window        wf-recorder | record a window under wayland
+       vtools record-wayland-selection     wf-recorder | record the selected area under wayland
+       vtools count                        wc          | count newline/word/bytes for input text
+       vtools qrcode [file]                qrencode    | encode/decode a QR Code
+       vtools net                          curl        | network connection test
+       vtools calculator                   bc          | calculate
 _EOF
 	exit 1
 }
@@ -47,6 +89,10 @@ case $1 in
 	"silent-video")			silent_video "$2";;
 	"record-wayland-selection")	record_wayland_selection;;
 	"record-wayland-window")	record_wayland_window;;
-	*) usage;;
+	"count")			count;;
+	"qrcode")			qrcode "$2";;
+	"net")				network_connection_test;;
+	"calculator")			calculator;;
+	*)				usage;;
 esac
 exit 0
